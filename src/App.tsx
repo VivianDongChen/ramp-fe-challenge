@@ -31,6 +31,11 @@ export function App() {
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
+      if (employeeId === "" || employeeId === "all") {
+        // If "All Employees" is selected, load all transactions.
+        await loadAllTransactions()
+        return
+      }
       paginatedTransactionsUtils.invalidateData()
       await transactionsByEmployeeUtils.fetchById(employeeId)
     },
