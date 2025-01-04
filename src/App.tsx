@@ -88,25 +88,23 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
-            <button
-              className="RampButton"
-              disabled={isTransactionsLoading} // Button disabled based on transactions loading state
-              onClick={async () => {
-                if (selectedEmployee === null) {
-                  console.error("Selected employee is null. Cannot load transactions.")
-                  return
-                }
-                if (selectedEmployee?.id === EMPTY_EMPLOYEE.id) {
-                  await loadAllTransactions(true) // Skip employee data loading
-                } else {
-                  await loadTransactionsByEmployee(selectedEmployee.id)
-                }
-              }}
-            >
-              View More
-            </button>
-          )}
+          {transactions !== null &&
+            paginatedTransactions?.nextPage !== null &&
+            selectedEmployee?.id === EMPTY_EMPLOYEE.id && (
+              <button
+                className="RampButton"
+                disabled={isTransactionsLoading} // Button disabled based on transactions loading state
+                onClick={async () => {
+                  if (selectedEmployee?.id === EMPTY_EMPLOYEE.id) {
+                    await loadAllTransactions(true) // Skip employee data loading
+                  } else {
+                    console.error("View More should not be clickable for filtered transactions.")
+                  }
+                }}
+              >
+                View More
+              </button>
+            )}
         </div>
       </main>
     </Fragment>
