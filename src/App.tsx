@@ -13,6 +13,9 @@ export function App() {
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(EMPTY_EMPLOYEE) // status variable of the employee filter
+  const [isEmployeesLoading, setIsEmployeesLoading] = useState(false) // New state to track employees loading status
+  const [isTransactionsLoading, setIsTransactionsLoading] = useState(false) // New state to track transactions loading status
 
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
@@ -20,13 +23,17 @@ export function App() {
   )
 
   const loadAllTransactions = useCallback(async () => {
-    setIsLoading(true)
+    // setIsLoading(true)
+    setIsEmployeesLoading(true)
+    setIsTransactionsLoading(true)
     transactionsByEmployeeUtils.invalidateData()
 
     await employeeUtils.fetchAll()
     await paginatedTransactionsUtils.fetchAll()
 
-    setIsLoading(false)
+    // setIsLoading(false)
+    setIsEmployeesLoading(false)
+    setIsTransactionsLoading(false)
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
   const loadTransactionsByEmployee = useCallback(
@@ -36,8 +43,10 @@ export function App() {
         await loadAllTransactions()
         return
       }
+      setIsTransactionsLoading(true)
       paginatedTransactionsUtils.invalidateData()
       await transactionsByEmployeeUtils.fetchById(employeeId)
+      setIsTransactionsLoading(false)
     },
     [paginatedTransactionsUtils, transactionsByEmployeeUtils]
   )
@@ -69,7 +78,7 @@ export function App() {
             if (newValue === null) {
               return
             }
-
+            setSelectedEmployee(newValue) // update the status
             await loadTransactionsByEmployee(newValue.id)
           }}
         />
@@ -84,7 +93,17 @@ export function App() {
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
               onClick={async () => {
-                await loadAllTransactions()
+                if (selectedEmployee === null) {
+                  console.error("Selected employee is null. Cannot load transactions.")
+                  return
+                }
+                if (selectedEmployee?.id === EMPTY_EMPLOYEE.id) {
+                  // if it is all employee, load all transactions
+                  await loadAllTransactions()
+                } else {
+                  // if it is a specific employee, load transaction of this employee.
+                  await loadTransactionsByEmployee(selectedEmployee.id)
+                }
               }}
             >
               View More

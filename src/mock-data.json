@@ -198,6 +198,90 @@
       "merchant": "Tasty Restaurant",
       "date": "8/3/2022",
       "approved": false
+    },
+    {
+      "id": "new1",
+      "amount": 105.5,
+      "employee": {
+        "id": "89bd9324-04e0-4cd6-aa27-981508bd219f",
+        "firstName": "James",
+        "lastName": "Smith"
+      },
+      "merchant": "Merchant 1",
+      "date": "01/02/2025",
+      "approved": true
+    },
+    {
+      "id": "new2",
+      "amount": 111.0,
+      "employee": {
+        "id": "89bd9324-04e0-4cd6-aa27-981508bd219f",
+        "firstName": "James",
+        "lastName": "Smith"
+      },
+      "merchant": "Merchant 2",
+      "date": "01/01/2025",
+      "approved": false
+    },
+    {
+      "id": "new3",
+      "amount": 116.5,
+      "employee": {
+        "id": "89bd9324-04e0-4cd6-aa27-981508bd219f",
+        "firstName": "James",
+        "lastName": "Smith"
+      },
+      "merchant": "Merchant 3",
+      "date": "12/31/2024",
+      "approved": true
+    },
+    {
+      "id": "new4",
+      "amount": 122.0,
+      "employee": {
+        "id": "7eeba422-5717-4026-8e74-e517576e26bd",
+        "firstName": "Mary",
+        "lastName": "Miller"
+      },
+      "merchant": "Merchant 4",
+      "date": "01/02/2025",
+      "approved": false
+    },
+    {
+      "id": "new5",
+      "amount": 127.5,
+      "employee": {
+        "id": "7eeba422-5717-4026-8e74-e517576e26bd",
+        "firstName": "Mary",
+        "lastName": "Miller"
+      },
+      "merchant": "Merchant 5",
+      "date": "01/01/2025",
+      "approved": true
+    },
+    {
+      "id": "new6",
+      "amount": 133.0,
+      "employee": {
+        "id": "6e88529c-6739-4f1b-bea0-02afdd336bb3",
+        "firstName": "Linda",
+        "lastName": "Jones"
+      },
+      "merchant": "Merchant 6",
+      "date": "12/30/2024",
+      "approved": false
+    },
+    {
+      "id": "new7",
+      "amount": 138.5,
+      "employee": {
+        "id": "6e88529c-6739-4f1b-bea0-02afdd336bb3",
+        "firstName": "Linda",
+        "lastName": "Jones"
+      },
+      "merchant": "Merchant 7",
+      "date": "12/29/2024",
+      "approved": true
     }
   ]
 }
