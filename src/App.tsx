@@ -12,8 +12,8 @@ export function App() {
   const { data: employees, ...employeeUtils } = useEmployees()
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(EMPTY_EMPLOYEE) // status variable of the employee filter
+  // Tracks the currently selected employee in the dropdown. Defaults to "All Employees" (EMPTY_EMPLOYEE).
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(EMPTY_EMPLOYEE)
   const [isEmployeesLoading, setIsEmployeesLoading] = useState(false) // New state to track employees loading status
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false) // New state to track transactions loading status
 
@@ -22,25 +22,25 @@ export function App() {
     [paginatedTransactions, transactionsByEmployee]
   )
 
-  const loadAllTransactions = useCallback(async () => {
-    // setIsLoading(true)
-    setIsEmployeesLoading(true)
-    setIsTransactionsLoading(true)
-    transactionsByEmployeeUtils.invalidateData()
-
-    await employeeUtils.fetchAll()
-    await paginatedTransactionsUtils.fetchAll()
-
-    // setIsLoading(false)
-    setIsEmployeesLoading(false)
-    setIsTransactionsLoading(false)
-  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
+  const loadAllTransactions = useCallback(
+    async (skipEmployeesLoading = false) => {
+      if (!skipEmployeesLoading) {
+        setIsEmployeesLoading(true) // Set loading state for employees
+        await employeeUtils.fetchAll() // Fetch all employees
+        setIsEmployeesLoading(false) // Employee data loading complete
+      }
+      setIsTransactionsLoading(true)
+      transactionsByEmployeeUtils.invalidateData()
+      await paginatedTransactionsUtils.fetchAll()
+      setIsTransactionsLoading(false)
+    },
+    [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils]
+  )
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
       if (employeeId === "" || employeeId === "all") {
-        // If "All Employees" is selected, load all transactions.
-        await loadAllTransactions()
+        await loadAllTransactions(true) //Skip employee data loading
         return
       }
       setIsTransactionsLoading(true)
@@ -65,7 +65,7 @@ export function App() {
         <hr className="RampBreak--l" />
 
         <InputSelect<Employee>
-          isLoading={isLoading}
+          isLoading={isEmployeesLoading} // Loading state for the dropdown
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
           label="Filter by employee"
@@ -78,7 +78,7 @@ export function App() {
             if (newValue === null) {
               return
             }
-            setSelectedEmployee(newValue) // update the status
+            setSelectedEmployee(newValue) // Update the selected employee state
             await loadTransactionsByEmployee(newValue.id)
           }}
         />
@@ -91,17 +91,15 @@ export function App() {
           {transactions !== null && (
             <button
               className="RampButton"
-              disabled={paginatedTransactionsUtils.loading}
+              disabled={isTransactionsLoading} // Button disabled based on transactions loading state
               onClick={async () => {
                 if (selectedEmployee === null) {
                   console.error("Selected employee is null. Cannot load transactions.")
                   return
                 }
                 if (selectedEmployee?.id === EMPTY_EMPLOYEE.id) {
-                  // if it is all employee, load all transactions
-                  await loadAllTransactions()
+                  await loadAllTransactions(true) // Skip employee data loading
                 } else {
-                  // if it is a specific employee, load transaction of this employee.
                   await loadTransactionsByEmployee(selectedEmployee.id)
                 }
               }}
