@@ -7,15 +7,23 @@ import { usePaginatedTransactions } from "./hooks/usePaginatedTransactions"
 import { useTransactionsByEmployee } from "./hooks/useTransactionsByEmployee"
 import { EMPTY_EMPLOYEE } from "./utils/constants"
 import { Employee } from "./utils/types"
+import { Transaction } from "./utils/types"
 
 export function App() {
   const { data: employees, ...employeeUtils } = useEmployees()
-  const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
-  const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
-  // Tracks the currently selected employee in the dropdown. Defaults to "All Employees" (EMPTY_EMPLOYEE).
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(EMPTY_EMPLOYEE)
   const [isEmployeesLoading, setIsEmployeesLoading] = useState(false) // New state to track employees loading status
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false) // New state to track transactions loading status
+  const {
+    data: paginatedTransactions,
+    updateTransactions: updatePaginatedTransactions,
+    ...paginatedTransactionsUtils
+  } = usePaginatedTransactions() // Destructure data and utilities for paginated transactions
+  const {
+    data: transactionsByEmployee,
+    updateTransactions: updateTransactionsByEmployee,
+    ...transactionsByEmployeeUtils
+  } = useTransactionsByEmployee() // Destructure data and utilities for transactions filtered by employee
 
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
@@ -49,6 +57,31 @@ export function App() {
       setIsTransactionsLoading(false)
     },
     [paginatedTransactionsUtils, transactionsByEmployeeUtils]
+  )
+
+  // Handle transaction approval toggle
+  const handleTransactionApproval = useCallback(
+    async (transactionId: string, value: boolean) => {
+      const updater = (transactions: Transaction[]) =>
+        transactions.map((transaction) =>
+          transaction.id === transactionId ? { ...transaction, approved: value } : transaction
+        )
+
+      if (selectedEmployee?.id === EMPTY_EMPLOYEE.id) {
+        updatePaginatedTransactions(updater)
+      } else {
+        updateTransactionsByEmployee(updater)
+      }
+
+      //  simulate a backend update
+      await paginatedTransactionsUtils.setTransactionApproval(transactionId, value)
+    },
+    [
+      updatePaginatedTransactions,
+      updateTransactionsByEmployee,
+      selectedEmployee,
+      paginatedTransactionsUtils,
+    ]
   )
 
   useEffect(() => {
@@ -86,8 +119,7 @@ export function App() {
         <div className="RampBreak--l" />
 
         <div className="RampGrid">
-          <Transactions transactions={transactions} />
-
+          <Transactions transactions={transactions} onApprove={handleTransactionApproval} />
           {transactions !== null &&
             paginatedTransactions?.nextPage !== null &&
             selectedEmployee?.id === EMPTY_EMPLOYEE.id && (

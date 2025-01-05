@@ -39,5 +39,16 @@ export function usePaginatedTransactions(): PaginatedTransactionsResult {
     setPaginatedTransactions(null)
   }, [])
 
-  return { data: paginatedTransactions, loading, fetchAll, invalidateData }
+  // **New Method**: Update transactions in the current state
+  const updateTransactions = useCallback((updater: (transactions: Transaction[]) => Transaction[]) => {
+    setPaginatedTransactions((prev) => {
+      if (!prev) return null // Keep unchanged if there is no transaction data
+      return {
+        ...prev,
+        data: updater(prev.data), // Apply the updater function to update the transaction list
+      }
+    })
+  }, [])
+
+  return { data: paginatedTransactions, loading, fetchAll, invalidateData, updateTransactions }
 }

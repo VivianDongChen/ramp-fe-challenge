@@ -25,5 +25,13 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
     setTransactionsByEmployee(null)
   }, [])
 
-  return { data: transactionsByEmployee, loading, fetchById, invalidateData }
+  // **New Method**: Update transactions in the current state
+  const updateTransactions = useCallback((updater: (transactions: Transaction[]) => Transaction[]) => {
+    setTransactionsByEmployee((prev) => {
+      if (!prev) return null // If no transactions, keep unchanged
+      return updater(prev) // Apply updater function to update transactions
+    })
+  }, [])
+
+  return { data: transactionsByEmployee, loading, fetchById, invalidateData, updateTransactions }
 }
