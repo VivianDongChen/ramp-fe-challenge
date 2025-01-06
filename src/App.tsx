@@ -49,7 +49,10 @@ export function App() {
         setIsTransactionsLoading(true)
 
         const transactions = await paginatedTransactionsUtils.fetchAll()
-        const updatedTransactions = mergeTransactionsWithCache(transactions.data, transactionCache)
+        const updatedTransactions = mergeTransactionsWithCache(
+          transactions.data.slice(0, 5),
+          transactionCache
+        )
 
         paginatedTransactionsUtils.setData({
           data: updatedTransactions,
@@ -118,6 +121,7 @@ export function App() {
 
         <InputSelect<Employee>
           isLoading={isEmployeesLoading} // Loading state for the dropdown
+          value={selectedEmployee} // Bind to the current state
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
           label="Filter by employee"
@@ -130,7 +134,7 @@ export function App() {
             if (newValue === null) {
               return
             }
-            await setSelectedEmployee(newValue) // Update the selected employee state
+            setSelectedEmployee(newValue) // Update the selected employee state
             await loadTransactionsByEmployee(newValue.id)
           }}
         />
