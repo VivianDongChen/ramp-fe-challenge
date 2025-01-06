@@ -1,15 +1,20 @@
 import { useCallback, useState } from "react"
 import { PaginatedRequestParams, PaginatedResponse, Transaction } from "../utils/types"
-import { PaginatedTransactionsResult } from "./types"
 import { useCustomFetch } from "./useCustomFetch"
 
-export function usePaginatedTransactions(): PaginatedTransactionsResult {
+export function usePaginatedTransactions(): {
+  data: PaginatedResponse<Transaction[]> | null
+  loading: boolean
+  fetchAll: () => Promise<PaginatedResponse<Transaction[]>>
+  invalidateData: () => void
+  setData: (newData: PaginatedResponse<Transaction[]>, append?: boolean) => void
+} {
   const { fetchWithCache, loading } = useCustomFetch()
   const [paginatedTransactions, setPaginatedTransactions] = useState<PaginatedResponse<
     Transaction[]
   > | null>(null)
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (): Promise<PaginatedResponse<Transaction[]>> => {
     const response = await fetchWithCache<PaginatedResponse<Transaction[]>, PaginatedRequestParams>(
       "paginatedTransactions",
       {
@@ -33,11 +38,31 @@ export function usePaginatedTransactions(): PaginatedTransactionsResult {
         nextPage: response.nextPage,
       }
     })
+    return response ?? { data: [], nextPage: null } // 确保函数总是返回一个值
   }, [fetchWithCache, paginatedTransactions])
 
   const invalidateData = useCallback(() => {
     setPaginatedTransactions(null)
   }, [])
 
-  return { data: paginatedTransactions, loading, fetchAll, invalidateData }
+  // const setData = useCallback((newData: PaginatedResponse<Transaction[]>) => {
+  //   setPaginatedTransactions(newData)
+  // }, [])
+
+  const setData = useCallback((newData: PaginatedResponse<Transaction[]>, append = false) => {
+    setPaginatedTransactions((prev) => {
+      if (!append || prev === null) {
+        // 如果 append 为 false 或之前没有数据，直接替换
+        return newData
+      }
+
+      // 否则，将新数据追加到已有数据中
+      return {
+        ...newData, // 保留新数据中的其他属性（如 nextPage）
+        data: [...prev.data, ...newData.data], // 合并数据
+      }
+    })
+  }, [])
+
+  return { data: paginatedTransactions, loading, fetchAll, invalidateData, setData }
 }

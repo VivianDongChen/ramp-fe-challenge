@@ -8,15 +8,19 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
   const [transactionsByEmployee, setTransactionsByEmployee] = useState<Transaction[] | null>(null)
 
   const fetchById = useCallback(
-    async (employeeId: string) => {
-      const data = await fetchWithCache<Transaction[], RequestByEmployeeParams>(
-        "transactionsByEmployee",
-        {
-          employeeId,
-        }
-      )
-
-      setTransactionsByEmployee(data)
+    async (employeeId: string): Promise<void> => {
+      try {
+        const data = await fetchWithCache<Transaction[], RequestByEmployeeParams>(
+          "transactionsByEmployee",
+          {
+            employeeId, // 确保显式提供值
+          }
+        )
+        setTransactionsByEmployee(data ?? []) // 更新内部状态
+      } catch (error) {
+        console.error("Error fetching transactions by employee:", error)
+        setTransactionsByEmployee([]) // 确保状态更新，即使发生错误
+      }
     },
     [fetchWithCache]
   )
@@ -25,5 +29,10 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
     setTransactionsByEmployee(null)
   }, [])
 
-  return { data: transactionsByEmployee, loading, fetchById, invalidateData }
+  // 添加 setData 方法
+  const setData = useCallback((newData: Transaction[]) => {
+    setTransactionsByEmployee(newData)
+  }, [])
+
+  return { data: transactionsByEmployee, loading, fetchById, invalidateData, setData }
 }
