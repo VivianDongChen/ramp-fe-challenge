@@ -24,7 +24,6 @@ export function App() {
   const { data: employees, ...employeeUtils } = useEmployees()
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
-  // Tracks the currently selected employee in the dropdown. Defaults to "All Employees" (EMPTY_EMPLOYEE).
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(EMPTY_EMPLOYEE)
   const [isEmployeesLoading, setIsEmployeesLoading] = useState(false) // New state to track employees loading status
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false) // New state to track transactions loading status
@@ -39,7 +38,7 @@ export function App() {
   }, [selectedEmployee, paginatedTransactions, transactionsByEmployee, transactionCache])
 
   const loadAllTransactions = useCallback(
-    async (skipEmployeesLoading = false) => {
+    async (isInitialLoad = false, skipEmployeesLoading = false) => {
       try {
         if (!skipEmployeesLoading) {
           setIsEmployeesLoading(true)
@@ -48,11 +47,15 @@ export function App() {
         }
         setIsTransactionsLoading(true)
 
+        if (isInitialLoad) {
+          paginatedTransactionsUtils.setData({
+            data: [],
+            nextPage: 0,
+          })
+        }
+
         const transactions = await paginatedTransactionsUtils.fetchAll()
-        const updatedTransactions = mergeTransactionsWithCache(
-          transactions.data.slice(0, 5),
-          transactionCache
-        )
+        const updatedTransactions = mergeTransactionsWithCache(transactions.data, transactionCache)
 
         paginatedTransactionsUtils.setData({
           data: updatedTransactions,
@@ -96,7 +99,6 @@ export function App() {
         ...prevCache,
         [transactionId]: newValue, // Update the cache
       }))
-      // Return an implicit Promise<void> to match the function signature
       return Promise.resolve()
     },
     []
@@ -120,8 +122,8 @@ export function App() {
         <hr className="RampBreak--l" />
 
         <InputSelect<Employee>
-          isLoading={isEmployeesLoading} // Loading state for the dropdown
-          value={selectedEmployee} // Bind to the current state
+          isLoading={isEmployeesLoading}
+          value={selectedEmployee}
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
           label="Filter by employee"
@@ -131,11 +133,14 @@ export function App() {
             label: `${item.firstName} ${item.lastName}`,
           })}
           onChange={async (newValue) => {
-            if (newValue === null) {
-              return
+            if (newValue === null) return
+            setSelectedEmployee(newValue)
+
+            if (newValue.id === EMPTY_EMPLOYEE.id) {
+              await loadAllTransactions(true, false)
+            } else {
+              await loadTransactionsByEmployee(newValue.id)
             }
-            setSelectedEmployee(newValue) // Update the selected employee state
-            await loadTransactionsByEmployee(newValue.id)
           }}
         />
 
@@ -144,8 +149,8 @@ export function App() {
         <div className="RampGrid">
           {transactions.length > 0 && (
             <Transactions
-              transactions={transactions} // Processed transactions using useMemo
-              setTransactionApproval={handleTransactionApproval} // Pass function
+              transactions={transactions}
+              setTransactionApproval={handleTransactionApproval}
             />
           )}
 
@@ -154,12 +159,10 @@ export function App() {
             selectedEmployee?.id === EMPTY_EMPLOYEE.id && (
               <button
                 className="RampButton"
-                disabled={isTransactionsLoading} // Button disabled based on transactions loading state
+                disabled={isTransactionsLoading}
                 onClick={async () => {
                   if (selectedEmployee?.id === EMPTY_EMPLOYEE.id) {
-                    await loadAllTransactions(true) // Skip employee data loading
-                  } else {
-                    console.error("View More should not be clickable for filtered transactions.")
+                    await loadAllTransactions(false, true)
                   }
                 }}
               >
