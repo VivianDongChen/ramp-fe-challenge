@@ -24,25 +24,25 @@ export function usePaginatedTransactions(): {
 
     setPaginatedTransactions((previousResponse) => {
       if (response === null) {
-        //fetch no data, keep unchanged
+        // No data fetched, keep the current state unchanged
         return previousResponse
       }
 
       if (previousResponse === null) {
-        // initial fetch
+        // Initial fetch
         return response
       }
 
       return {
-        data: [...previousResponse.data, ...response.data], // Merge new data with existing data
+        data: [...previousResponse.data, ...response.data], // Append new data to the existing data
         nextPage: response.nextPage,
       }
     })
-    return response ?? { data: [], nextPage: null } // 确保函数总是返回一个值
+    return response ?? { data: [], nextPage: null } // Ensure the function always returns a value
   }, [fetchWithCache, paginatedTransactions])
 
   const invalidateData = useCallback(() => {
-    setPaginatedTransactions(null)
+    setPaginatedTransactions(null) // Reset the cached data
   }, [])
 
   return { data: paginatedTransactions, loading, fetchAll, invalidateData }

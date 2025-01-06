@@ -14,7 +14,7 @@ export function App() {
     transactions: Transaction[],
     transactionCache: Record<string, boolean>
   ): Transaction[] => {
-    const uniqueTransactions = Array.from(new Map(transactions.map((t) => [t.id, t])).values()) // 去重
+    const uniqueTransactions = Array.from(new Map(transactions.map((t) => [t.id, t])).values()) // Remove duplicates
     return uniqueTransactions.map((transaction) => ({
       ...transaction,
       approved: transactionCache[transaction.id] ?? transaction.approved,
@@ -28,20 +28,13 @@ export function App() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(EMPTY_EMPLOYEE)
   const [isEmployeesLoading, setIsEmployeesLoading] = useState(false) // New state to track employees loading status
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false) // New state to track transactions loading status
-  const [transactionCache, setTransactionCache] = useState<Record<string, boolean>>({})
+  const [transactionCache, setTransactionCache] = useState<Record<string, boolean>>({}) // Cache variable to store transaction updates
 
-  // const transactions = useMemo(
-  //   () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
-  //   [paginatedTransactions, transactionsByEmployee]
-  // )
-
-  // UseMemo to always apply transactionCache to the displayed data
   const transactions = useMemo(() => {
     const rawTransactions =
       selectedEmployee?.id === EMPTY_EMPLOYEE.id
         ? paginatedTransactions?.data ?? []
         : transactionsByEmployee ?? []
-    console.log("Merged Transactions:", rawTransactions)
     return mergeTransactionsWithCache(rawTransactions, transactionCache)
   }, [selectedEmployee, paginatedTransactions, transactionsByEmployee, transactionCache])
 
@@ -73,7 +66,6 @@ export function App() {
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
-      console.log("Loading transactions for employee ID:", employeeId)
       if (employeeId === "" || employeeId === "all") {
         await loadAllTransactions(true) // Skip employee data loading
         return
@@ -81,11 +73,6 @@ export function App() {
       setIsTransactionsLoading(true)
       try {
         const transactions = await transactionsByEmployeeUtils.fetchById(employeeId)
-        console.log("Fetched Transactions By Employee:", transactions)
-
-        if (!transactions || transactions.length === 0) {
-          console.warn(`No transactions found for employee ID: ${employeeId}`)
-        }
 
         // Merge with cache
         const updatedTransactions = mergeTransactionsWithCache(transactions, transactionCache)
@@ -104,9 +91,9 @@ export function App() {
     ({ transactionId, newValue }: { transactionId: string; newValue: boolean }) => {
       setTransactionCache((prevCache) => ({
         ...prevCache,
-        [transactionId]: newValue, // 更新缓存
+        [transactionId]: newValue, // Update the cache
       }))
-      // 添加一个隐式的 Promise<void> 返回以匹配类型签名
+      // Return an implicit Promise<void> to match the function signature
       return Promise.resolve()
     },
     []
@@ -143,7 +130,6 @@ export function App() {
             if (newValue === null) {
               return
             }
-            console.log("Selected Employee:", newValue)
             await setSelectedEmployee(newValue) // Update the selected employee state
             await loadTransactionsByEmployee(newValue.id)
           }}
@@ -152,13 +138,11 @@ export function App() {
         <div className="RampBreak--l" />
 
         <div className="RampGrid">
-          {transactions.length > 0 ? (
+          {transactions.length > 0 && (
             <Transactions
-              transactions={transactions} // 使用 useMemo 处理后的 transactions
-              setTransactionApproval={handleTransactionApproval} // 传递函数
+              transactions={transactions} // Processed transactions using useMemo
+              setTransactionApproval={handleTransactionApproval} // Pass function
             />
-          ) : (
-            <div>No transactions available for the selected employee.</div>
           )}
 
           {transactions !== null &&

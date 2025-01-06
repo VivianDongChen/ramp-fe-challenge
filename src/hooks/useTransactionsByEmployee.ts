@@ -13,27 +13,23 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
         const data = await fetchWithCache<Transaction[], RequestByEmployeeParams>(
           "transactionsByEmployee",
           {
-            employeeId, // 确保显式提供值
+            employeeId, // Explicitly provide employee ID
           }
         )
-        console.log("Fetched data for employee ID:", employeeId, data)
-        setTransactionsByEmployee(data ?? []) // 更新内部状态
+        setTransactionsByEmployee(data ?? []) // Update state with fetched data
       } catch (error) {
-        console.error("Error fetching transactions by employee:", error)
-        setTransactionsByEmployee([]) // 确保状态更新，即使发生错误
+        setTransactionsByEmployee([]) // Ensure state is updated even if an error occurs
       }
     },
     [fetchWithCache]
   )
 
   const invalidateData = useCallback(() => {
-    setTransactionsByEmployee(null)
+    setTransactionsByEmployee(null) // Reset the state
   }, [])
 
-  // 添加 setData 方法
   const setData = useCallback((newData: Transaction[]) => {
-    console.log("Setting transactionsByEmployee data:", newData)
-    setTransactionsByEmployee(newData)
+    setTransactionsByEmployee(newData) // Directly set the state with new data
   }, [])
 
   return { data: transactionsByEmployee, loading, fetchById, invalidateData, setData }
