@@ -45,24 +45,5 @@ export function usePaginatedTransactions(): {
     setPaginatedTransactions(null)
   }, [])
 
-  // const setData = useCallback((newData: PaginatedResponse<Transaction[]>) => {
-  //   setPaginatedTransactions(newData)
-  // }, [])
-
-  const setData = useCallback((newData: PaginatedResponse<Transaction[]>, append = false) => {
-    setPaginatedTransactions((prev) => {
-      if (!append || prev === null) {
-        // 如果 append 为 false 或之前没有数据，直接替换
-        return newData
-      }
-
-      // 否则，将新数据追加到已有数据中
-      return {
-        ...newData, // 保留新数据中的其他属性（如 nextPage）
-        data: [...prev.data, ...newData.data], // 合并数据
-      }
-    })
-  }, [])
-
-  return { data: paginatedTransactions, loading, fetchAll, invalidateData, setData }
+  return { data: paginatedTransactions, loading, fetchAll, invalidateData }
 }

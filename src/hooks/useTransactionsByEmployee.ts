@@ -16,6 +16,7 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
             employeeId, // 确保显式提供值
           }
         )
+        console.log("Fetched data for employee ID:", employeeId, data)
         setTransactionsByEmployee(data ?? []) // 更新内部状态
       } catch (error) {
         console.error("Error fetching transactions by employee:", error)
@@ -31,6 +32,7 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
 
   // 添加 setData 方法
   const setData = useCallback((newData: Transaction[]) => {
+    console.log("Setting transactionsByEmployee data:", newData)
     setTransactionsByEmployee(newData)
   }, [])
 

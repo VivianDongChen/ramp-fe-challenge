@@ -14,9 +14,10 @@ export function App() {
     transactions: Transaction[],
     transactionCache: Record<string, boolean>
   ): Transaction[] => {
-    return transactions.map((transaction: Transaction) => ({
+    const uniqueTransactions = Array.from(new Map(transactions.map((t) => [t.id, t])).values()) // 去重
+    return uniqueTransactions.map((transaction) => ({
       ...transaction,
-      approved: transactionCache[transaction.id] ?? transaction.approved, // 优先使用缓存中的状态
+      approved: transactionCache[transaction.id] ?? transaction.approved,
     }))
   }
 
@@ -36,10 +37,13 @@ export function App() {
 
   // UseMemo to always apply transactionCache to the displayed data
   const transactions = useMemo(() => {
-    const rawTransactions = paginatedTransactions?.data ?? transactionsByEmployee ?? []
+    const rawTransactions =
+      selectedEmployee?.id === EMPTY_EMPLOYEE.id
+        ? paginatedTransactions?.data ?? []
+        : transactionsByEmployee ?? []
     console.log("Merged Transactions:", rawTransactions)
     return mergeTransactionsWithCache(rawTransactions, transactionCache)
-  }, [paginatedTransactions, transactionsByEmployee, transactionCache])
+  }, [selectedEmployee, paginatedTransactions, transactionsByEmployee, transactionCache])
 
   const loadAllTransactions = useCallback(
     async (skipEmployeesLoading = false) => {
@@ -51,50 +55,41 @@ export function App() {
         }
         setIsTransactionsLoading(true)
 
-        transactionsByEmployeeUtils.invalidateData()
         const transactions = await paginatedTransactionsUtils.fetchAll()
-
         const updatedTransactions = mergeTransactionsWithCache(transactions.data, transactionCache)
 
-        paginatedTransactionsUtils.setData(
-          {
-            ...paginatedTransactions,
-            data: updatedTransactions,
-            nextPage: paginatedTransactions?.nextPage ?? null,
-          },
-          true // append = true
-        )
+        paginatedTransactionsUtils.setData({
+          data: updatedTransactions,
+          nextPage: transactions.nextPage,
+        })
       } catch (error) {
-        console.error("Error loading transactions:", error)
+        console.error("Error loading all transactions:", error)
       } finally {
-        setIsTransactionsLoading(false) // 确保状态在所有情况下被重置
+        setIsTransactionsLoading(false)
       }
     },
-    [
-      employeeUtils,
-      paginatedTransactionsUtils,
-      transactionsByEmployeeUtils,
-      transactionCache,
-      paginatedTransactions,
-    ]
+    [employeeUtils, paginatedTransactionsUtils, transactionCache]
   )
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
+      console.log("Loading transactions for employee ID:", employeeId)
       if (employeeId === "" || employeeId === "all") {
-        await loadAllTransactions(true) //Skip employee data loading
+        await loadAllTransactions(true) // Skip employee data loading
         return
       }
       setIsTransactionsLoading(true)
-      transactionsByEmployeeUtils.invalidateData()
       try {
-        // 获取新的员工相关交易数据
         const transactions = await transactionsByEmployeeUtils.fetchById(employeeId)
+        console.log("Fetched Transactions By Employee:", transactions)
 
-        // 使用缓存合并交易数据
-        const updatedTransactions = mergeTransactionsWithCache(transactions ?? [], transactionCache)
+        if (!transactions || transactions.length === 0) {
+          console.warn(`No transactions found for employee ID: ${employeeId}`)
+        }
 
-        // 更新员工相关交易数据
+        // Merge with cache
+        const updatedTransactions = mergeTransactionsWithCache(transactions, transactionCache)
+        // Set updated data
         transactionsByEmployeeUtils.setData(updatedTransactions)
       } catch (error) {
         console.error("Error loading transactions by employee:", error)
@@ -102,7 +97,7 @@ export function App() {
         setIsTransactionsLoading(false)
       }
     },
-    [loadAllTransactions, paginatedTransactionsUtils, transactionsByEmployeeUtils, transactionCache]
+    [loadAllTransactions, transactionsByEmployeeUtils, transactionCache]
   )
 
   const handleTransactionApproval = useCallback(
@@ -118,20 +113,12 @@ export function App() {
   )
 
   useEffect(() => {
-    console.log("Employees:", employees)
-    console.log("Transactions By Employee:", transactionsByEmployee)
-    console.log("Paginated Transactions:", paginatedTransactions)
-    console.log("Selected Employee:", selectedEmployee)
-    if (employees === null && !employeeUtils.loading) {
+    if (!employees && !employeeUtils.loading) {
       void loadAllTransactions()
     }
-  }, [employeeUtils.loading, employees, loadAllTransactions])
+  }, [employees, employeeUtils.loading])
 
-  if (
-    !employees ||
-    (selectedEmployee.id !== EMPTY_EMPLOYEE.id && !transactionsByEmployee) ||
-    !paginatedTransactions
-  ) {
+  if (!employees || (selectedEmployee.id !== EMPTY_EMPLOYEE.id && !transactionsByEmployee)) {
     return <div>Loading...</div>
   }
 
@@ -156,7 +143,8 @@ export function App() {
             if (newValue === null) {
               return
             }
-            setSelectedEmployee(newValue) // Update the selected employee state
+            console.log("Selected Employee:", newValue)
+            await setSelectedEmployee(newValue) // Update the selected employee state
             await loadTransactionsByEmployee(newValue.id)
           }}
         />
@@ -164,10 +152,14 @@ export function App() {
         <div className="RampBreak--l" />
 
         <div className="RampGrid">
-          <Transactions
-            transactions={transactions} // 使用 useMemo 处理后的 transactions
-            setTransactionApproval={handleTransactionApproval} // 传递函数
-          />
+          {transactions.length > 0 ? (
+            <Transactions
+              transactions={transactions} // 使用 useMemo 处理后的 transactions
+              setTransactionApproval={handleTransactionApproval} // 传递函数
+            />
+          ) : (
+            <div>No transactions available for the selected employee.</div>
+          )}
 
           {transactions !== null &&
             paginatedTransactions?.nextPage !== null &&
